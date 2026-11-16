@@ -7,16 +7,23 @@ output: github_document
 
 ```{r setup,include=FALSE}
 library(tidyverse)
+set.seed(1236)
 ```
-Problem 1
+
+
+# Problem 1
+
 - n people total?
+
 ```{r}
-birthdays = sample(1:365, size = n_room, replace = TRUE)
-
-repeated_birthdays = length(unique(birthdays)) < n_room
-
-repeated_birthdays
+birthday_repeated = function(n_room) {
+  birthdays = sample(1:365, size = n_room, replace = TRUE)
+  repeated_birthdays  = length(unique(birthdays)) < n_room
+  return(repeated_birthdays)
+}
 ```
+
+iterations
 
 ```{r}
 birthday_results_df =
@@ -39,3 +46,10 @@ birthday_results_df |>
   geom_point() + 
   geom_line()
 ```
+
+
+# Problem 2
+do map function!!!
+
+# Problem 3
+simulation! more similar to birthday problem. conduct hypothesis tests to see when the true effect size is relatively small, how often do you reject the null hypothesis. think in context of bias in scientific publishing -> should see biased effect estimates when the truth is small and you have underpowered studies
