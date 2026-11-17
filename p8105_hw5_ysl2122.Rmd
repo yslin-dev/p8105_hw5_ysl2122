@@ -1,18 +1,15 @@
 ---
 title: "Homework 5"
 author: "Yuyi Lin"
-date: "2026-11-16"
+date: "2026-11-18"
 output: github_document
 ---
 
-```{r setup,include=FALSE}
+```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 ```
 
-
 # Problem 1
-
-- n people total?
 
 ```{r}
 set.seed(1236)
@@ -21,9 +18,11 @@ birthday_repeated = function(n_room) {
   repeated_birthdays  = length(unique(birthdays)) < n_room
   return(repeated_birthdays)
 }
+
+birthday_repeated(147)
 ```
 
-iterations
+TRUE statement confirms that there are duplicate birthdays in the group.
 
 ```{r}
 birthday_results_df =
@@ -32,13 +31,8 @@ birthday_results_df =
     iter = 1:10000
   ) |> 
   mutate(
-    repeated = map_lgl(number_of_people, birthday_repeated)
-  )
-```
-
-look at these results
-
-```{r}
+    repeated = map_lgl(number_of_people, birthday_repeated))
+    
 birthday_results_df |> 
   group_by(number_of_people) |> 
   summarize(prob_of_repeat = mean(repeated)) |> 
@@ -47,16 +41,23 @@ birthday_results_df |>
   geom_line()
 ```
 
+Plot confirms that probability of least two people in the group sharing a birthday increases when there is more people in the room. When this probability is 50%, there are about 22-23 people in the room.
 
 # Problem 2
-do map function!!!check if data folder list.files works
-- do you want list.files done in a specific way
+
 ```{r}
 study_df = 
-  tibble(files = list.files("./data"), path = str_c("./data/", files)) |>
-  mutate(data = purrr::map(path, read_csv)) |> 
+  tibble(
+    files = list.files("./data"), 
+    path = str_c("./data/", files)
+  ) |>
+  mutate(data = purrr::map(path, read_csv, show_col_types= FALSE)) |> 
   unnest(data)
+```
 
+### Tidy Df
+
+```{r}
 tidy_df = 
   study_df |> 
   mutate(
@@ -73,10 +74,18 @@ tidy_df =
 
 tidy_df |> 
   ggplot(aes(x = week, y = outcome, group = subj, color = group)) + 
-  geom_line() + geom_point() + facet_grid(~group) 
+  geom_line() + 
+  geom_point() + 
+  facet_grid(~group) 
 ```
 
+Plot indicates while participants in the control arm seemed to have similar outcomes over the week (ranging from about -1.2 to 3.7), participants in the experimental arm had increased outcomes, scaling up from 0 to 7.5 over the week.
+
 # Problem 3
+
+- do you want t-test done in a specific way
+- is the third graph interpretation good
+- should we add x, y, and graph titles or what i have ok
 ```{r}
 sim_ttest = function(mu){
   sim_data = 
@@ -100,12 +109,19 @@ sim_results_df =
   unnest(est_df) |> 
   mutate(rejected = p.value < 0.05)
 
+sim_results_df
+```
+
+```{r}
 sim_results_df |> 
   group_by(mu) |> 
   summarize(power = mean(rejected)) |> 
   ggplot(aes(x = mu, y = power)) + 
-  geom_point() + geom_line()
+  geom_point() + 
+  geom_line()
 ```
+
+As the true population mu moves further away from the null mean, effect size increases, and (the proportion of times the null was rejected) exponentially increases. This plot supports that studies with small true effect size may be underpowered compared to studies with larger true effect size. 
 
 ```{r}
 sim_results_df |> 
@@ -115,12 +131,17 @@ sim_results_df |>
   geom_point() + geom_line()
 ```
 
+As the true population mu increases, the average estimate of mu also increases, indicating that the sample mean is an unbiased estimator across multiple iterations.
+
 ```{r}
 sim_results_df |> 
   filter(rejected == TRUE) |> 
   group_by(mu) |> 
   summarize(
     emp_mean = mean(estimate)) |> 
-  ggplot(aes(x = mu, y = emp_mean)) + geom_point() + geom_line()
+  ggplot(aes(x = mu, y = emp_mean)) + 
+  geom_point() + geom_line()
 ```
-simulation! more similar to birthday problem. conduct hypothesis tests to see when the true effect size is relatively small, how often do you reject the null hypothesis. think in context of bias in scientific publishing -> should see biased effect estimates when the truth is small and you have underpowered studies
+
+After filtering by samples for which the null was rejected, we found that the average estimate of mu was higher than the true population mean when the effect size was small compared to when we looked at true mu for samples in general. However, when true mean increased, it had high enough power where the average mu estimate could better approximate it. 
+
