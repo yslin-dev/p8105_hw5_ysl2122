@@ -53,24 +53,64 @@ do map function!!!check if data folder list.files works
 - do you want list.files done in a specific way
 ```{r}
 study_df = 
-  tibble(file_name = list.files("./data")) |>
-  mutate(file_path = str_c("./data/", file_name),
-        data = purrr::map(file_path, read_csv)) |> 
-  unnest(data) |> 
+  tibble(files = list.files("./data"), path = str_c("./data/", files)) |>
+  mutate(data = purrr::map(path, read_csv)) |> 
+  unnest(data)
+
+tidy_df = 
+  study_df |> 
   mutate(
-    subject = str_replace(file_name, ".csv", "")) |>
-  separate(subject, into = c("arm", "subject_id"), sep = "_") |> 
+    files = str_replace(files, ".csv", "") |>
+    group = str_sub(files, 1, 3),
+    subject_id = str_sub(files, 5, 6)) |> 
   pivot_longer(
     week_1:week_8,
     names_to = "week", 
     names_prefix = "week_", 
     values_to = "observation") |>
   mutate(week = as.numeric(week)) |> 
-    select(subject_id, arm, week, observation)
+    select(group, subject_id, subj = files, week, outcome)
 
-study_df |> 
-  ggplot(aes(x = week, y = observation, group = subject_id, color = arm)) + 
-  geom_line() + geom_point() + facet_grid(.~arm) 
+tidy_df |> 
+  ggplot(aes(x = week, y = outcome, group = subj, color = group)) + 
+  geom_line() + geom_point() + facet_grid(~group) 
 ```
+
 # Problem 3
+```{r}
+sim_ttest = function(mu){
+  sim_data = 
+    tibble(
+      x = rnorm(30, mean = mu, sd = 5)
+    )
+  t.test(pull(sim_data, x), mu = 0) |> 
+    broom::tidy() |> 
+    select(estimate, p.value)}
+```
+
+```{r}
+sum_results_df = 
+  expand_grid(
+    mu = 0:6,
+    iter = 1:5000) |> 
+  mutate(
+    est_df = map(mu, sim_ttest)) |> 
+  unnest(est_df) |> 
+  mutate(rejected = p.value < 0.05)
+
+sum_results_df |> 
+  group_by(mu) |> 
+  summarize(
+    emp_mean = mean(estimate)) |> 
+  ggplot(aes(x = mu, y = emp_mean)) + geom_point() + geom_line()
+```
+
+```{r}
+sum_results_df |> 
+  filter(reject == TRUE) |> 
+  group_by(mu) |> 
+  summarize(
+    emp_mean = mean(estimate)) |> 
+  ggplot(aes(x = mu, y = emp_mean)) + geom_point() + geom_line()
+```
 simulation! more similar to birthday problem. conduct hypothesis tests to see when the true effect size is relatively small, how often do you reject the null hypothesis. think in context of bias in scientific publishing -> should see biased effect estimates when the truth is small and you have underpowered studies
