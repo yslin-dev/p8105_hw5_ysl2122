@@ -49,7 +49,13 @@ birthday_results_df |>
 
 
 # Problem 2
-do map function!!!
-
+do map function!!!check if data folder list.files works
+- do you want list.files done in a specific way
+```{r}
+study_df = 
+  tibble(file_name = list.files("./data", full.names = TRUE)) |>
+  mutate(arm = map(file_name, read_csv)) |> 
+  unnest(arm)
+```
 # Problem 3
 simulation! more similar to birthday problem. conduct hypothesis tests to see when the true effect size is relatively small, how often do you reject the null hypothesis. think in context of bias in scientific publishing -> should see biased effect estimates when the truth is small and you have underpowered studies
